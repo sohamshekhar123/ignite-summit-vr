@@ -324,7 +324,7 @@
 <!-- ── HUD ────────────────────────────────────────────────── -->
 <div id="hud">
   <div class="hud-title"><span>IGNITE</span> CAPS Building Tour</div>
-  <div class="hud-hint">Click a marker to fly there<br>and learn more</div>
+  <div class="hud-hint">Tap or click a marker to fly there<br>and learn more</div>
 </div>
 
 <!-- ── Home button (return to start) ──────────────────────── -->
@@ -392,9 +392,14 @@
     <a-camera id="cam" position="0 1.65 0"
               look-controls="pointerLockEnabled: false"
               wasd-controls="enabled: false"
+              cursor="rayOrigin: mouse; fuse: false"
+              raycaster="objects: .poi-clickable; interval: 80"
               near="0.05" far="500">
-      <!-- Gaze cursor (mobile only) -->
+
+      <!-- Gaze-fuse cursor ring — ONLY shown inside VR headset
+           (no mouse/touch available, so user must look + dwell) -->
       <a-entity id="gaze-cursor"
+        visible="false"
         cursor="fuse: true; fuseTimeout: 1500; rayOrigin: entity"
         position="0 0 -1"
         geometry="primitive: ring; radiusInner: 0.012; radiusOuter: 0.018"
@@ -405,14 +410,16 @@
       </a-entity>
     </a-camera>
 
-    <!-- VR hands (still useful for VR headsets) -->
+    <!-- VR hands — laser pointer + click on trigger -->
     <a-entity id="left-hand"
       laser-controls="hand: left"
-      raycaster="objects: .poi-clickable; interval: 80"
+      cursor="fuse: false"
+      raycaster="objects: .poi-clickable; interval: 80; lineColor: #e94560; lineOpacity: 0.6"
       vive-controls="hand: left" oculus-touch-controls="hand: left"></a-entity>
     <a-entity id="right-hand"
       laser-controls="hand: right"
-      raycaster="objects: .poi-clickable; interval: 80"
+      cursor="fuse: false"
+      raycaster="objects: .poi-clickable; interval: 80; lineColor: #e94560; lineOpacity: 0.6"
       vive-controls="hand: right" oculus-touch-controls="hand: right"></a-entity>
   </a-entity>
 
@@ -496,22 +503,25 @@
     document.getElementById('audio-status').textContent = 'No audio';
   });
 
-  // ── Desktop: mouse raycaster instead of gaze cursor ─────
+  // ── VR mode: enable gaze cursor (no touch/mouse in headset)
+  //    Flat screen (desktop + mobile): camera already has
+  //    cursor="rayOrigin: mouse" so click/tap works everywhere
   var gazeCursor = document.getElementById('gaze-cursor');
-  if (!isMobile) {
+  var cam = document.getElementById('cam');
+
+  scene.addEventListener('enter-vr', function () {
+    // In VR headset, show gaze ring and enable its cursor
+    gazeCursor.setAttribute('visible', true);
+    gazeCursor.setAttribute('cursor', 'fuse: true; fuseTimeout: 1500; rayOrigin: entity');
+    // Disable camera mouse cursor (hands/gaze take over)
+    cam.removeAttribute('cursor');
+  });
+
+  scene.addEventListener('exit-vr', function () {
+    // Back to flat screen — hide gaze, re-enable mouse/touch cursor
     gazeCursor.setAttribute('visible', false);
     gazeCursor.removeAttribute('cursor');
-    var cam = document.getElementById('cam');
-    cam.setAttribute('raycaster', 'objects: .poi-clickable; interval: 80');
-    cam.setAttribute('cursor', 'rayOrigin: mouse');
-  }
-
-  // ── VR mode toggles ─────────────────────────────────────
-  scene.addEventListener('enter-vr', function () {
-    gazeCursor.setAttribute('visible', false);
-  });
-  scene.addEventListener('exit-vr', function () {
-    if (isMobile) gazeCursor.setAttribute('visible', true);
+    cam.setAttribute('cursor', 'rayOrigin: mouse; fuse: false');
   });
 
   // ── Mobile renderer optimization ─────────────────────────
