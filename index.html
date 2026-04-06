@@ -8,39 +8,75 @@
 
   <!-- A-Frame 1.5.0 -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <!-- aframe-extras for locomotion / teleport -->
+  <!-- aframe-extras (keeping for VR hand models) -->
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
-  <!-- ── Register all custom components BEFORE the scene ────── -->
+  <!-- ── Components (must register BEFORE a-scene) ────────── -->
   <script>
-  // ─ Detect mobile ──────────────────────────────────────────
   var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  // ─────────────────────────────────────────────────────────
-  //  poi-marker  component  (must register BEFORE a-scene)
-  // ─────────────────────────────────────────────────────────
+  /* ─────────────────────────────────────────────────────────
+   *  smooth-locomotion — animates the rig to a target pos
+   * ───────────────────────────────────────────────────────── */
+  AFRAME.registerComponent('smooth-locomotion', {
+    schema: {
+      duration: { type: 'number', default: 1200 },
+      easing:   { type: 'string', default: 'easeInOutCubic' }
+    },
+    init: function () {
+      this._flying = false;
+    },
+    flyTo: function (targetPos) {
+      if (this._flying) return;
+      this._flying = true;
+      var el = this.el;
+      var d = this.data;
+      var cur = el.getAttribute('position');
+      var from = cur.x + ' ' + cur.y + ' ' + cur.z;
+      var to = targetPos.x + ' ' + targetPos.y + ' ' + targetPos.z;
+      var self = this;
+
+      el.setAttribute('animation__flyto', {
+        property: 'position',
+        from: from,
+        to: to,
+        dur: d.duration,
+        easing: d.easing
+      });
+
+      setTimeout(function () {
+        self._flying = false;
+        el.removeAttribute('animation__flyto');
+      }, d.duration + 50);
+    }
+  });
+
+  /* ─────────────────────────────────────────────────────────
+   *  poi-marker — glowing sphere + click-to-teleport
+   * ───────────────────────────────────────────────────────── */
   AFRAME.registerComponent('poi-marker', {
     schema: {
       title:       { type: 'string', default: 'Point of Interest' },
       description: { type: 'string', default: '' },
       audio:       { type: 'string', default: '' },
       color:       { type: 'color',  default: '#e94560' },
-      radius:      { type: 'number', default: 0.22 }
+      radius:      { type: 'number', default: 0.22 },
+      viewOffset:  { type: 'vec3',   default: { x: 0, y: 0, z: 2.5 } }
     },
 
     init: function () {
       var d = this.data;
       var el = this.el;
 
-      // ── Outer glow shell ──────────────────────────────────
+      // ── Outer glow ────────────────────────────────────────
       this.glow = document.createElement('a-sphere');
-      this.glow.setAttribute('radius', d.radius * 1.5);
+      this.glow.setAttribute('radius', d.radius * 1.6);
       this.glow.setAttribute('material', {
-        color: d.color, opacity: 0.18, transparent: true, shader: 'flat'
+        color: d.color, opacity: 0.15, transparent: true, shader: 'flat'
       });
       this.glow.setAttribute('animation', {
-        property: 'scale', from: '1 1 1', to: '1.25 1.25 1.25',
-        dir: 'alternate', loop: true, dur: 1800, easing: 'easeInOutSine'
+        property: 'scale', from: '1 1 1', to: '1.35 1.35 1.35',
+        dir: 'alternate', loop: true, dur: 2000, easing: 'easeInOutSine'
       });
 
       // ── Core sphere ───────────────────────────────────────
@@ -48,13 +84,22 @@
       this.sphere.setAttribute('class', 'poi-clickable');
       this.sphere.setAttribute('radius', d.radius);
       this.sphere.setAttribute('material', {
-        color: d.color, emissive: d.color, emissiveIntensity: 0.55,
-        roughness: 0.3, metalness: 0.5
+        color: d.color, emissive: d.color, emissiveIntensity: 0.6,
+        roughness: 0.25, metalness: 0.5
       });
       this.sphere.setAttribute('animation__pulse', {
         property: 'components.material.material.emissiveIntensity',
-        from: 0.35, to: 0.9, dir: 'alternate', loop: true,
-        dur: 900, easing: 'easeInOutSine'
+        from: 0.3, to: 1.0, dir: 'alternate', loop: true,
+        dur: 1000, easing: 'easeInOutSine'
+      });
+
+      // ── Vertical beam (pillar of light) ───────────────────
+      this.beam = document.createElement('a-cylinder');
+      this.beam.setAttribute('radius', 0.02);
+      this.beam.setAttribute('height', 3);
+      this.beam.setAttribute('position', '0 -1.5 0');
+      this.beam.setAttribute('material', {
+        color: d.color, opacity: 0.25, transparent: true, shader: 'flat'
       });
 
       // ── Label ─────────────────────────────────────────────
@@ -62,25 +107,41 @@
       this.label.setAttribute('value', d.title);
       this.label.setAttribute('align', 'center');
       this.label.setAttribute('color', '#ffffff');
-      this.label.setAttribute('width', 2.5);
-      this.label.setAttribute('position', '0 ' + (d.radius * 2 + 0.15) + ' 0');
+      this.label.setAttribute('width', 2.8);
+      this.label.setAttribute('position', '0 ' + (d.radius * 2.2 + 0.18) + ' 0');
+      this.label.setAttribute('look-at', '#cam');
 
+      el.appendChild(this.beam);
       el.appendChild(this.glow);
       el.appendChild(this.sphere);
       el.appendChild(this.label);
 
-      // ── Click / hover events ──────────────────────────────
+      // ── Events ────────────────────────────────────────────
       var self = this;
       this.sphere.addEventListener('click', function () { self.activate(); });
+      el.addEventListener('click', function () { self.activate(); });
       this.sphere.addEventListener('mouseenter', function () { self.onHoverEnter(); });
       this.sphere.addEventListener('mouseleave', function () { self.onHoverLeave(); });
-      el.addEventListener('click', function () { self.activate(); });
 
       this._currentAudio = null;
     },
 
     activate: function () {
       var d = this.data;
+      var elPos = this.el.getAttribute('position');
+
+      // ── Fly the camera rig to the viewpoint ───────────────
+      var rig = document.getElementById('rig');
+      var locomotion = rig.components['smooth-locomotion'];
+      if (locomotion) {
+        locomotion.flyTo({
+          x: elPos.x + d.viewOffset.x,
+          y: 0,
+          z: elPos.z + d.viewOffset.z
+        });
+      }
+
+      // ── Show info panel ───────────────────────────────────
       var panel    = document.getElementById('info-panel');
       var titleEl  = document.getElementById('panel-title');
       var descEl   = document.getElementById('panel-desc');
@@ -91,24 +152,27 @@
       descEl.textContent  = d.description;
       panel.classList.add('visible');
 
+      // ── Stop previous audio ───────────────────────────────
       if (window._activePoi && window._activePoi !== this) {
         window._activePoi.stopAudio();
       }
       window._activePoi = this;
 
+      // ── Play audio ────────────────────────────────────────
       if (d.audio) {
         var audioEl = document.getElementById(d.audio);
         if (audioEl) {
           audioEl.currentTime = 0;
+          var self = this;
           audioEl.play().then(function () {
             audioInd.classList.remove('idle');
             audioSt.textContent = 'Audio playing…';
-            this._currentAudio = audioEl;
+            self._currentAudio = audioEl;
             audioEl.onended = function () {
               audioInd.classList.add('idle');
               audioSt.textContent = 'Audio finished';
             };
-          }.bind(this)).catch(function () {
+          }).catch(function () {
             audioInd.classList.add('idle');
             audioSt.textContent = 'Tap to play audio';
           });
@@ -129,42 +193,54 @@
 
     onHoverEnter: function () {
       this.sphere.setAttribute('animation__hover', {
-        property: 'scale', to: '1.2 1.2 1.2', dur: 200, easing: 'easeOutQuad'
+        property: 'scale', to: '1.3 1.3 1.3', dur: 200, easing: 'easeOutQuad'
       });
+      this.label.setAttribute('animation__labelhover', {
+        property: 'scale', to: '1.15 1.15 1.15', dur: 200, easing: 'easeOutQuad'
+      });
+      document.body.style.cursor = 'pointer';
     },
 
     onHoverLeave: function () {
       this.sphere.setAttribute('animation__hover', {
         property: 'scale', to: '1 1 1', dur: 200, easing: 'easeOutQuad'
       });
+      this.label.setAttribute('animation__labelhover', {
+        property: 'scale', to: '1 1 1', dur: 200, easing: 'easeOutQuad'
+      });
+      document.body.style.cursor = 'default';
+    }
+  });
+
+  /* ─────────────────────────────────────────────────────────
+   *  look-at — billboard labels toward camera
+   * ───────────────────────────────────────────────────────── */
+  AFRAME.registerComponent('look-at', {
+    schema: { type: 'selector' },
+    tick: function () {
+      if (this.data) {
+        var target = this.data.object3D.getWorldPosition(new THREE.Vector3());
+        this.el.object3D.lookAt(target);
+      }
     }
   });
   </script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #1a1a2e;
-      overflow: hidden;
-    }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #1a1a2e; overflow: hidden; }
 
     /* ── Loading Screen ────────────────────────────────────── */
     #loading-screen {
-      position: fixed; inset: 0; z-index: 9999;
-      background: #1a1a2e;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 24px;
+      position: fixed; inset: 0; z-index: 9999; background: #1a1a2e;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
       transition: opacity 0.6s ease;
     }
     #loading-screen.hidden { opacity: 0; pointer-events: none; }
-
     .loading-logo {
       width: 72px; height: 72px; border-radius: 50%;
       background: linear-gradient(135deg, #e94560, #0f3460);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 32px;
+      display: flex; align-items: center; justify-content: center; font-size: 32px;
       animation: pulse-logo 1.8s ease-in-out infinite;
     }
     @keyframes pulse-logo {
@@ -173,28 +249,14 @@
     }
     .loading-title { color: #fff; font-size: 1.4rem; font-weight: 600; letter-spacing: 0.04em; }
     .loading-sub   { color: rgba(255,255,255,0.55); font-size: 0.85rem; letter-spacing: 0.08em; }
+    .loading-bar-track { width: 220px; height: 4px; background: rgba(255,255,255,0.12); border-radius: 999px; overflow: hidden; }
+    .loading-bar-fill { height: 100%; background: linear-gradient(90deg, #e94560, #533483); border-radius: 999px; animation: loading-progress 2.8s ease-in-out forwards; }
+    @keyframes loading-progress { 0% { width: 0; } 60% { width: 75%; } 100% { width: 100%; } }
 
-    .loading-bar-track {
-      width: 220px; height: 4px;
-      background: rgba(255,255,255,0.12); border-radius: 999px; overflow: hidden;
-    }
-    .loading-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #e94560, #533483);
-      border-radius: 999px;
-      animation: loading-progress 2.8s ease-in-out forwards;
-    }
-    @keyframes loading-progress {
-      0%   { width: 0; }
-      60%  { width: 75%; }
-      100% { width: 100%; }
-    }
-
-    /* ── HUD Overlay ───────────────────────────────────────── */
+    /* ── HUD ───────────────────────────────────────────────── */
     #hud {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      padding: 16px 20px;
-      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
       pointer-events: none;
       background: linear-gradient(to bottom, rgba(26,26,46,0.85) 0%, transparent 100%);
     }
@@ -202,23 +264,31 @@
     .hud-title span { color: #e94560; }
     .hud-hint { color: rgba(255,255,255,0.65); font-size: 0.72rem; text-align: right; line-height: 1.5; }
 
+    /* ── Home button ───────────────────────────────────────── */
+    #home-btn {
+      position: fixed; bottom: 16px; right: 16px; z-index: 150;
+      background: rgba(15,15,35,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(233,69,96,0.3); border-radius: 12px;
+      padding: 10px 18px; color: rgba(255,255,255,0.8); font-size: 0.78rem;
+      cursor: pointer; transition: background 0.2s, transform 0.15s;
+      font-family: inherit; letter-spacing: 0.03em;
+    }
+    #home-btn:hover { background: rgba(233,69,96,0.25); transform: scale(1.04); }
+
     /* ── Info Panel ─────────────────────────────────────────── */
     #info-panel {
       position: fixed; bottom: 36px; left: 50%;
       transform: translateX(-50%) translateY(120px);
-      z-index: 200;
-      width: min(480px, calc(100vw - 32px));
+      z-index: 200; width: min(480px, calc(100vw - 32px));
       background: rgba(15, 15, 35, 0.88);
       backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(233,69,96,0.35);
-      border-radius: 16px; padding: 24px 24px 20px;
-      color: #fff; opacity: 0;
+      border: 1px solid rgba(233,69,96,0.35); border-radius: 16px;
+      padding: 24px 24px 20px; color: #fff; opacity: 0;
       transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease;
       pointer-events: none;
       box-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
     }
     #info-panel.visible { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
-
     .panel-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
     .panel-icon {
       width: 36px; height: 36px; border-radius: 50%;
@@ -235,13 +305,9 @@
     }
     #close-btn:hover { background: rgba(233,69,96,0.3); color: #fff; }
     #panel-desc { font-size: 0.9rem; line-height: 1.65; color: rgba(255,255,255,0.78); margin-top: 4px; }
-
     .panel-audio-indicator { margin-top: 14px; display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: rgba(255,255,255,0.45); }
     .audio-dot { width: 8px; height: 8px; border-radius: 50%; background: #e94560; animation: audio-pulse 1.2s ease-in-out infinite; }
-    @keyframes audio-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%      { opacity: 0.4; transform: scale(0.7); }
-    }
+    @keyframes audio-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
     .panel-audio-indicator.idle .audio-dot { animation: none; background: rgba(255,255,255,0.25); }
   </style>
 </head>
@@ -258,8 +324,11 @@
 <!-- ── HUD ────────────────────────────────────────────────── -->
 <div id="hud">
   <div class="hud-title"><span>IGNITE</span> CAPS Building Tour</div>
-  <div class="hud-hint">Look at or click a marker<br>to learn more</div>
+  <div class="hud-hint">Click a marker to fly there<br>and learn more</div>
 </div>
+
+<!-- ── Home button (return to start) ──────────────────────── -->
+<button id="home-btn">⌂ Return to Start</button>
 
 <!-- ── Info Panel ─────────────────────────────────────────── -->
 <div id="info-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
@@ -284,7 +353,6 @@
   device-orientation-permission-ui="enabled: true"
 >
 
-  <!-- Assets — timeout lowered, preload="auto" only for model -->
   <a-assets timeout="10000">
     <a-asset-item id="building-model" src="assets/model.glb"></a-asset-item>
     <audio id="audio-poi-1" src="assets/audio/poi-1.mp3" preload="none"></audio>
@@ -300,19 +368,17 @@
   <a-plane position="0 0 0" rotation="-90 0 0" width="60" height="60"
            color="#0d0d1a" roughness="0.9" metalness="0.1" shadow="receive: true"></a-plane>
 
-  <!-- Grid helper lines on the ground for spatial reference -->
-  <a-entity id="grid-helper" position="0 0.01 0" rotation="-90 0 0">
-    <a-plane width="60" height="60" material="src: none; color: #222244; opacity: 0.4; transparent: true; wireframe: true; wireframeLinewidth: 1" segments-width="30" segments-height="30"></a-plane>
+  <!-- Grid overlay -->
+  <a-entity position="0 0.01 0" rotation="-90 0 0">
+    <a-plane width="60" height="60"
+             material="color: #222244; opacity: 0.35; transparent: true; wireframe: true"
+             segments-width="30" segments-height="30"></a-plane>
   </a-entity>
 
   <!-- Building Model -->
-  <a-entity
-    id="building"
-    gltf-model="#building-model"
-    position="0 1 -6"
-    scale="2 2 2"
-    shadow="cast: true; receive: true">
-  </a-entity>
+  <a-entity id="building" gltf-model="#building-model"
+            position="0 1 -6" scale="2 2 2"
+            shadow="cast: true; receive: true"></a-entity>
 
   <!-- Lighting -->
   <a-light type="ambient" color="#445577" intensity="0.8"></a-light>
@@ -321,15 +387,14 @@
   <a-light type="point" color="#e94560" intensity="0.6" position="0 4 -5" distance="18"></a-light>
   <a-light type="point" color="#533483" intensity="0.4" position="-5 3 -8" distance="15"></a-light>
 
-  <!-- Camera Rig -->
-  <a-entity id="rig" position="0 0 2" movement-controls="fly: false; speed: 0.15">
+  <!-- ── Camera Rig (SEATED — no walking, smooth-fly only) ── -->
+  <a-entity id="rig" position="0 0 4" smooth-locomotion="duration: 1200">
     <a-camera id="cam" position="0 1.65 0"
               look-controls="pointerLockEnabled: false"
               wasd-controls="enabled: false"
               near="0.05" far="500">
       <!-- Gaze cursor (mobile only) -->
-      <a-entity
-        id="gaze-cursor"
+      <a-entity id="gaze-cursor"
         cursor="fuse: true; fuseTimeout: 1500; rayOrigin: entity"
         position="0 0 -1"
         geometry="primitive: ring; radiusInner: 0.012; radiusOuter: 0.018"
@@ -340,25 +405,48 @@
       </a-entity>
     </a-camera>
 
-    <!-- VR hands — teleport -->
+    <!-- VR hands (still useful for VR headsets) -->
     <a-entity id="left-hand"
-      teleport-controls="cameraRig: #rig; teleportOrigin: #cam; button: trigger; collisionEntities: .collidable"
-      vive-controls="hand: left" oculus-touch-controls="hand: left" windows-motion-controls="hand: left">
-    </a-entity>
+      laser-controls="hand: left"
+      raycaster="objects: .poi-clickable; interval: 80"
+      vive-controls="hand: left" oculus-touch-controls="hand: left"></a-entity>
     <a-entity id="right-hand"
-      teleport-controls="cameraRig: #rig; teleportOrigin: #cam; button: trigger; collisionEntities: .collidable"
-      vive-controls="hand: right" oculus-touch-controls="hand: right" windows-motion-controls="hand: right">
-    </a-entity>
+      laser-controls="hand: right"
+      raycaster="objects: .poi-clickable; interval: 80"
+      vive-controls="hand: right" oculus-touch-controls="hand: right"></a-entity>
   </a-entity>
 
-  <!-- Invisible ground for teleport collision -->
-  <a-plane class="collidable" position="0 0.01 0" rotation="-90 0 0" width="60" height="60" visible="false"></a-plane>
-
   <!-- ── POI Markers ──────────────────────────────────────── -->
-  <a-entity id="poi-1" poi-marker="title: Main Entrance; description: Welcome to the CAPS building. This is your starting point for the virtual tour.; audio: audio-poi-1; color: #e94560" position="0 1.5 -5"></a-entity>
-  <a-entity id="poi-2" poi-marker="title: Innovation Lab; description: Where students build real-world projects using cutting-edge tools and technology.; audio: audio-poi-2; color: #533483" position="5 1.5 -5"></a-entity>
-  <a-entity id="poi-3" poi-marker="title: Collaboration Space; description: Open area designed for team projects, brainstorming, and peer learning.; audio: audio-poi-3; color: #0f3460" position="-5 1.5 -5"></a-entity>
-  <a-entity id="poi-4" poi-marker="title: Studio; description: Creative and media production studio — video, audio, and digital art production.; audio: audio-poi-4; color: #16213e" position="0 1.5 -10"></a-entity>
+  <!--   viewOffset: where the camera flies relative to the POI
+         positive Z = in front of the POI facing it              -->
+
+  <a-entity id="poi-1" position="0 1.5 -5"
+    poi-marker="title: Main Entrance;
+                description: Welcome to the CAPS building. This is your starting point for the virtual tour.;
+                audio: audio-poi-1;
+                color: #e94560;
+                viewOffset: 0 0 3"></a-entity>
+
+  <a-entity id="poi-2" position="5 1.5 -5"
+    poi-marker="title: Innovation Lab;
+                description: Where students build real-world projects using cutting-edge tools and technology.;
+                audio: audio-poi-2;
+                color: #533483;
+                viewOffset: -2.5 0 2"></a-entity>
+
+  <a-entity id="poi-3" position="-5 1.5 -5"
+    poi-marker="title: Collaboration Space;
+                description: Open area designed for team projects, brainstorming, and peer learning.;
+                audio: audio-poi-3;
+                color: #0f3460;
+                viewOffset: 2.5 0 2"></a-entity>
+
+  <a-entity id="poi-4" position="0 1.5 -10"
+    poi-marker="title: Studio;
+                description: Creative and media production studio — video, audio, and digital art production.;
+                audio: audio-poi-4;
+                color: #16213e;
+                viewOffset: 0 0 3"></a-entity>
 
 </a-scene>
 
@@ -376,20 +464,12 @@
     setTimeout(function () { loadingScreen.style.display = 'none'; }, 700);
   }
 
-  // A-Frame scene loaded
-  if (scene.hasLoaded) {
-    hideLoader();
-  } else {
-    scene.addEventListener('loaded', hideLoader);
-  }
-
-  // Also listen for render-target-loaded (fires when WebGL is ready)
+  if (scene.hasLoaded) { hideLoader(); }
+  else { scene.addEventListener('loaded', hideLoader); }
   scene.addEventListener('render-target-loaded', hideLoader);
-
-  // Hard fallback — never block for more than 4 seconds
   setTimeout(hideLoader, 4000);
 
-  // ── Close button ──────────────────────────────────────────
+  // ── Close info panel ────────────────────────────────────
   document.getElementById('close-btn').addEventListener('click', function () {
     document.getElementById('info-panel').classList.remove('visible');
     if (window._activePoi) {
@@ -400,18 +480,33 @@
     document.getElementById('audio-status').textContent = 'No audio';
   });
 
-  // ── Gaze cursor: hide on desktop ─────────────────────────
+  // ── Home button — fly back to start ─────────────────────
+  var START_POS = { x: 0, y: 0, z: 4 };
+  document.getElementById('home-btn').addEventListener('click', function () {
+    var rig = document.getElementById('rig');
+    var locomotion = rig.components['smooth-locomotion'];
+    if (locomotion) { locomotion.flyTo(START_POS); }
+    // Also close any open panel
+    document.getElementById('info-panel').classList.remove('visible');
+    if (window._activePoi) {
+      window._activePoi.stopAudio();
+      window._activePoi = null;
+    }
+    document.getElementById('audio-indicator').classList.add('idle');
+    document.getElementById('audio-status').textContent = 'No audio';
+  });
+
+  // ── Desktop: mouse raycaster instead of gaze cursor ─────
   var gazeCursor = document.getElementById('gaze-cursor');
   if (!isMobile) {
     gazeCursor.setAttribute('visible', false);
     gazeCursor.removeAttribute('cursor');
-    // Desktop: mouse-based raycaster
     var cam = document.getElementById('cam');
     cam.setAttribute('raycaster', 'objects: .poi-clickable; interval: 80');
     cam.setAttribute('cursor', 'rayOrigin: mouse');
   }
 
-  // VR mode toggles
+  // ── VR mode toggles ─────────────────────────────────────
   scene.addEventListener('enter-vr', function () {
     gazeCursor.setAttribute('visible', false);
   });
@@ -419,7 +514,7 @@
     if (isMobile) gazeCursor.setAttribute('visible', true);
   });
 
-  // ── Mobile renderer optimization ──────────────────────────
+  // ── Mobile renderer optimization ─────────────────────────
   if (isMobile) {
     scene.setAttribute('renderer', 'antialias: false; maxCanvasWidth: 1280; maxCanvasHeight: 1280');
   }
