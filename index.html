@@ -362,18 +362,7 @@
   </a-assets>
 
   <!-- Sky -->
-  <a-sky color="#1a1a2e"></a-sky>
-
-  <!-- Ground -->
-  <a-plane position="0 0 0" rotation="-90 0 0" width="60" height="60"
-           color="#0d0d1a" roughness="0.9" metalness="0.1" shadow="receive: true"></a-plane>
-
-  <!-- Grid overlay -->
-  <a-entity position="0 0.01 0" rotation="-90 0 0">
-    <a-plane width="60" height="60"
-             material="color: #222244; opacity: 0.35; transparent: true; wireframe: true"
-             segments-width="30" segments-height="30"></a-plane>
-  </a-entity>
+  <a-sky color="#87ceeb"></a-sky>
 
   <!-- Building Model -->
   <a-entity id="building" gltf-model="#building-model"
@@ -381,11 +370,9 @@
             shadow="cast: true; receive: true"></a-entity>
 
   <!-- Lighting -->
-  <a-light type="ambient" color="#445577" intensity="0.8"></a-light>
-  <a-light type="directional" color="#ffffff" intensity="1.2" position="8 16 6"
+  <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
+  <a-light type="directional" color="#ffffff" intensity="0.5" position="-1 4 2"
            cast-shadow="true" shadow-map-width="2048" shadow-map-height="2048"></a-light>
-  <a-light type="point" color="#e94560" intensity="0.6" position="0 4 -5" distance="18"></a-light>
-  <a-light type="point" color="#533483" intensity="0.4" position="-5 3 -8" distance="15"></a-light>
 
   <!-- ── Camera Rig (SEATED — no walking, smooth-fly only) ── -->
   <a-entity id="rig" position="0 0 4" smooth-locomotion="duration: 1200">
