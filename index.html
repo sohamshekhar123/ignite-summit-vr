@@ -224,6 +224,43 @@
       }
     }
   });
+
+  /* ─────────────────────────────────────────────────────────
+   *  poi-loader — dynamically loads POIs from a JSON file
+   * ───────────────────────────────────────────────────────── */
+  AFRAME.registerComponent('poi-loader', {
+    schema: {
+      src: { type: 'string', default: 'pois.json' }
+    },
+    init: function () {
+      var self = this;
+      fetch(this.data.src)
+        .then(function(response) {
+          if (!response.ok) throw new Error('Network response was not ok');
+          return response.json();
+        })
+        .then(function(pois) {
+          pois.forEach(function(poi) {
+            var el = document.createElement('a-entity');
+            if (poi.id) el.setAttribute('id', poi.id);
+            el.setAttribute('position', poi.position);
+            
+            el.setAttribute('poi-marker', {
+              title: poi.title,
+              description: poi.description,
+              color: poi.color,
+              audio: poi.audio || '',
+              viewOffset: poi.viewOffset || '0 0 2.5'
+            });
+            
+            self.el.appendChild(el);
+          });
+        })
+        .catch(function(err) {
+          console.error("Error loading POIs:", err);
+        });
+    }
+  });
   </script>
 
   <style>
@@ -348,12 +385,12 @@
 <a-scene
   id="main-scene"
   loading-screen="enabled: false"
-  renderer="antialias: true; maxCanvasWidth: 1920; maxCanvasHeight: 1920"
+  renderer="antialias: false; maxCanvasWidth: 1920; maxCanvasHeight: 1920"
   vr-mode-ui="enabled: true"
   device-orientation-permission-ui="enabled: true"
 >
 
-  <a-assets timeout="10000">
+  <a-assets timeout="60000">
     <a-asset-item id="building-model" src="assets/4_8_20267.glb"></a-asset-item>
     <audio id="audio-poi-1" src="assets/audio/poi-1.mp3" preload="none"></audio>
     <audio id="audio-poi-2" src="assets/audio/poi-2.mp3" preload="none"></audio>
@@ -410,37 +447,10 @@
       vive-controls="hand: right" oculus-touch-controls="hand: right"></a-entity>
   </a-entity>
 
-  <!-- ── POI Markers ──────────────────────────────────────── -->
+  <!-- ── POI Markers (Loaded Dynamically) ─────────────────── -->
   <!--   viewOffset: where the camera flies relative to the POI
          positive Z = in front of the POI facing it              -->
-
-  <a-entity id="poi-1" position="0 1.5 -5"
-    poi-marker="title: Main Entrance;
-                description: Welcome to the CAPS building. This is your starting point for the virtual tour.;
-                audio: audio-poi-1;
-                color: #e94560;
-                viewOffset: 0 0 3"></a-entity>
-
-  <a-entity id="poi-2" position="5 1.5 -5"
-    poi-marker="title: Innovation Lab;
-                description: Where students build real-world projects using cutting-edge tools and technology.;
-                audio: audio-poi-2;
-                color: #533483;
-                viewOffset: -2.5 0 2"></a-entity>
-
-  <a-entity id="poi-3" position="-5 1.5 -5"
-    poi-marker="title: Collaboration Space;
-                description: Open area designed for team projects, brainstorming, and peer learning.;
-                audio: audio-poi-3;
-                color: #0f3460;
-                viewOffset: 2.5 0 2"></a-entity>
-
-  <a-entity id="poi-4" position="0 1.5 -10"
-    poi-marker="title: Studio;
-                description: Creative and media production studio — video, audio, and digital art production.;
-                audio: audio-poi-4;
-                color: #16213e;
-                viewOffset: 0 0 3"></a-entity>
+  <a-entity id="poi-container" poi-loader="src: pois.json"></a-entity>
 
 </a-scene>
 
@@ -511,10 +521,6 @@
     cam.setAttribute('cursor', 'rayOrigin: mouse; fuse: false');
   });
 
-  // ── Mobile renderer optimization ─────────────────────────
-  if (isMobile) {
-    scene.setAttribute('renderer', 'antialias: false; maxCanvasWidth: 1280; maxCanvasHeight: 1280');
-  }
 })();
 </script>
 

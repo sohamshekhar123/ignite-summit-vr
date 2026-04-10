@@ -1,0 +1,38 @@
+[
+  {
+    "id": "poi-1",
+    "position": "0 1.5 -5",
+    "title": "Main Entrance",
+    "description": "Welcome to the CAPS building. This is your starting point for the virtual tour.",
+    "audio": "audio-poi-1",
+    "color": "#e94560",
+    "viewOffset": "0 0 3"
+  },
+  {
+    "id": "poi-2",
+    "position": "5 1.5 -5",
+    "title": "Innovation Lab",
+    "description": "Where students build real-world projects using cutting-edge tools and technology.",
+    "audio": "audio-poi-2",
+    "color": "#533483",
+    "viewOffset": "-2.5 0 2"
+  },
+  {
+    "id": "poi-3",
+    "position": "-5 1.5 -5",
+    "title": "Collaboration Space",
+    "description": "Open area designed for team projects, brainstorming, and peer learning.",
+    "audio": "audio-poi-3",
+    "color": "#0f3460",
+    "viewOffset": "2.5 0 2"
+  },
+  {
+    "id": "poi-4",
+    "position": "0 1.5 -10",
+    "title": "Studio",
+    "description": "Creative and media production studio — video, audio, and digital art production.",
+    "audio": "audio-poi-4",
+    "color": "#16213e",
+    "viewOffset": "0 0 3"
+  }
+]

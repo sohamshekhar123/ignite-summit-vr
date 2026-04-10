@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>POI Editor - IGNITE CAPS</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script>
+    // A simplified visual marker (just a sphere and a beam for preview)
+    AFRAME.registerComponent('editor-poi-preview', {
+      schema: { color: {type: 'color', default: '#e94560'} },
+      init: function() {
+        var el = this.el;
+        var r = 0.22;
+        var mtl = {color: this.data.color, emissive: this.data.color, emissiveIntensity: 0.6};
+        
+        var sphere = document.createElement('a-sphere');
+        sphere.setAttribute('radius', r);
+        sphere.setAttribute('material', mtl);
+        
+        var beam = document.createElement('a-cylinder');
+        beam.setAttribute('radius', 0.02);
+        beam.setAttribute('height', 3);
+        beam.setAttribute('position', '0 -1.5 0');
+        beam.setAttribute('material', {color: this.data.color, opacity: 0.25, transparent: true, shader: 'flat'});
+        
+        el.appendChild(beam);
+        el.appendChild(sphere);
+      }
+    });
+  </script>
+  <style>
+    body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; overflow: hidden; }
+    #ui-layer {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 100;
+    }
+    .panel {
+      position: absolute; background: rgba(15,15,35,0.9); border: 1px solid rgba(233,69,96,0.4);
+      padding: 16px; border-radius: 8px; color: white; pointer-events: auto; backdrop-filter: blur(8px);
+    }
+    #top-bar { top: 16px; left: 16px; min-width: 300px; }
+    #top-bar h1 { margin: 0 0 8px 0; font-size: 1.2rem; }
+    #top-bar p { margin: 0 0 12px 0; font-size: 0.8rem; color: #ccc; }
+    #top-bar button {
+      background: #e94560; color: white; border: none; padding: 8px 12px; border-radius: 4px;
+      cursor: pointer; margin-right: 8px; font-weight: bold;
+    }
+    #top-bar button:hover { background: #ff5c77; }
+    
+    #crosshair {
+      position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+      background: white; border-radius: 50%; transform: translate(-50%, -50%);
+      pointer-events: none; mix-blend-mode: difference;
+    }
+
+    #poi-modal {
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 320px; display: none;
+    }
+    #poi-modal.visible { display: block; }
+    #poi-modal label { display: block; margin-top: 10px; font-size: 0.8rem; color: #aaa; }
+    #poi-modal input, #poi-modal textarea {
+      width: 100%; box-sizing: border-box; padding: 6px; margin-top: 4px;
+      background: rgba(0,0,0,0.5); border: 1px solid #444; color: white; border-radius: 4px;
+    }
+    #poi-modal textarea { resize: vertical; min-height: 60px; }
+    .modal-actions { margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end; }
+    .modal-actions button {
+      padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer;
+    }
+    #btn-cancel { background: #444; color: white; }
+    #btn-cancel:hover { background: #555; }
+    #btn-save { background: #e94560; color: white; font-weight: bold; }
+    #btn-save:hover { background: #ff5c77; }
+  </style>
+</head>
+<body>
+
+  <!-- UI Layer -->
+  <div id="ui-layer">
+    <div class="panel" id="top-bar">
+      <h1>POI Editor</h1>
+      <p>Use WASD/Drag to move. Click on the building to place a new POI.</p>
+      <button id="btn-export-json">Export JSON</button>
+      <button id="btn-copy-html">Copy HTML</button>
+    </div>
+    
+    <div id="crosshair"></div>
+    
+    <!-- Modal for adding POI information -->
+    <div class="panel" id="poi-modal">
+      <h2 style="margin:0 0 10px 0; font-size:1.1rem;">New Point of Interest</h2>
+      <label>Title</label>
+      <input type="text" id="input-title" placeholder="e.g. Main Entrance">
+      
+      <label>Description</label>
+      <textarea id="input-desc" placeholder="Enter details..."></textarea>
+      
+      <label>Audio ID (optional)</label>
+      <input type="text" id="input-audio" placeholder="e.g. audio-poi-1">
+      
+      <label>Color</label>
+      <input type="color" id="input-color" value="#e94560">
+      
+      <div class="modal-actions">
+        <button id="btn-cancel">Cancel</button>
+        <button id="btn-save">Add POI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- A-Frame Scene -->
+  <!-- We use a cursor with rayOrigin: mouse so clicking exactly placed the POI where the mouse clicks -->
+  <a-scene cursor="rayOrigin: mouse" raycaster="objects: .raycastable" loading-screen="dotsColor: #e94560; backgroundColor: #1a1a2e">
+    <a-assets>
+      <a-asset-item id="building-model" src="assets/4_8_20267.glb"></a-asset-item>
+    </a-assets>
+
+    <a-sky color="#87ceeb"></a-sky>
+
+    <!-- The building is raycastable so we can click on walls/floors -->
+    <a-entity id="building" gltf-model="#building-model" class="raycastable"
+              position="0 1 -6" scale="2 2 2"></a-entity>
+
+    <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
+    <a-light type="directional" color="#ffffff" intensity="0.5" position="-1 4 2"></a-light>
+
+    <a-camera position="0 1.65 4" look-controls wasd-controls="acceleration: 65"></a-camera>
+    
+    <!-- Basic invisible floor in case we miss the model -->
+    <a-plane position="0 0.1 0" rotation="-90 0 0" width="100" height="100" visible="false" class="raycastable"></a-plane>
+  </a-scene>
+
+  <script>
+    var pois = [];
+    var pendingPosition = null;
+
+    var scene = document.querySelector('a-scene');
+    var modal = document.getElementById('poi-modal');
+    
+    var inTitle = document.getElementById('input-title');
+    var inDesc = document.getElementById('input-desc');
+    var inAudio = document.getElementById('input-audio');
+    var inColor = document.getElementById('input-color');
+
+    // Fetch existing POIs to populate the editor state initially
+    fetch('pois.json')
+      .then(function(response) {
+        return response.ok ? response.json() : [];
+      })
+      .then(function(data) {
+        data.forEach(function(p) {
+          pois.push(p);
+          var el = document.createElement('a-entity');
+          el.setAttribute('position', p.position);
+          el.setAttribute('editor-poi-preview', 'color: ' + p.color);
+          scene.appendChild(el);
+        });
+      })
+      .catch(function(err) {
+        console.error("Failed to load existing POIs:", err);
+      });
+
+    // When clicking on a raycastable object
+    scene.addEventListener('click', function(e) {
+      if (modal.classList.contains('visible')) return;
+      
+      // Ensure we have an intersection
+      if (e.detail && e.detail.intersection) {
+        var point = e.detail.intersection.point;
+        
+        // Slightly elevate the POI marker above the clicked floor/point
+        var x = point.x.toFixed(2);
+        var y = (point.y + 1.4).toFixed(2);
+        var z = point.z.toFixed(2);
+        
+        pendingPosition = x + ' ' + y + ' ' + z;
+        
+        // Reset form and show modal
+        inTitle.value = '';
+        inDesc.value = '';
+        inAudio.value = '';
+        inColor.value = '#e94560';
+        modal.classList.add('visible');
+        inTitle.focus();
+      }
+    });
+
+    document.getElementById('btn-cancel').addEventListener('click', function() {
+      modal.classList.remove('visible');
+    });
+
+    document.getElementById('btn-save').addEventListener('click', function() {
+      var title = inTitle.value.trim();
+      if (!title) { alert('Title is required!'); return; }
+      
+      var newPoi = {
+        id: 'poi-' + (pois.length + 1) + '-' + Date.now().toString().slice(-4),
+        position: pendingPosition,
+        title: title,
+        description: inDesc.value.trim(),
+        color: inColor.value,
+        audio: inAudio.value.trim() || undefined,
+        viewOffset: "0 0 2.5" // Default offset to face the POI
+      };
+      
+      pois.push(newPoi);
+      
+      // Instantiate visually immediately
+      var el = document.createElement('a-entity');
+      el.setAttribute('position', newPoi.position);
+      el.setAttribute('editor-poi-preview', 'color: ' + newPoi.color);
+      scene.appendChild(el);
+      
+      modal.classList.remove('visible');
+    });
+
+    document.getElementById('btn-export-json').addEventListener('click', function() {
+      if (pois.length === 0) { alert('No POIs to export!'); return; }
+      
+      var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pois, null, 2));
+      var dlAnchorElem = document.createElement('a');
+      dlAnchorElem.setAttribute("href", dataStr);
+      dlAnchorElem.setAttribute("download", "pois.json");
+      dlAnchorElem.click();
+    });
+
+    document.getElementById('btn-copy-html').addEventListener('click', function() {
+      if (pois.length === 0) { alert('No POIs to copy!'); return; }
+      
+      var html = pois.map(function(p) {
+        var markerProps = 'title: ' + p.title + '; description: ' + p.description + '; color: ' + p.color + ';';
+        if (p.audio) markerProps += ' audio: ' + p.audio + ';';
+        markerProps += ' viewOffset: ' + p.viewOffset + ';';
+        
+        return '<a-entity id="' + p.id + '" position="' + p.position + '"\n    poi-marker="' + markerProps + '"></a-entity>';
+      }).join('\n\n');
+      
+      // Fallback for clipboard api if not in secure context
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(html).then(function() {
+          alert('HTML copied to clipboard!');
+        }).catch(function(err) {
+          alert('Failed to copy text: ' + err);
+        });
+      } else {
+        alert('Clipboard API not available. Use the Export JSON button or view console.');
+        console.log("POIs HTML:", html);
+      }
+    });
+
+    // Disable dragging elements on the UI to not interfere with look controls
+    document.getElementById('ui-layer').addEventListener('mousedown', function(e) {
+      if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
+        // Allow clicks to pass through if necessary, or prevent default
+      }
+    });
+
+  </script>
+</body>
+</html>
