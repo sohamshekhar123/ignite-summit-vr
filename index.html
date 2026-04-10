@@ -411,11 +411,10 @@
   <a-light type="directional" color="#ffffff" intensity="0.5" position="-1 4 2"
            cast-shadow="true" shadow-map-width="2048" shadow-map-height="2048"></a-light>
 
-  <!-- ── Camera Rig (SEATED — no walking, smooth-fly only) ── -->
-  <a-entity id="rig" position="0 0 4" smooth-locomotion="duration: 1200">
+  <!-- ── Camera Rig ── -->
+  <a-entity id="rig" position="0 0 4" movement-controls="speed: 0.15; fly: false" smooth-locomotion="duration: 1200">
     <a-camera id="cam" position="0 1.65 0"
               look-controls="pointerLockEnabled: false"
-              wasd-controls="enabled: false"
               cursor="rayOrigin: mouse; fuse: false"
               raycaster="objects: .poi-clickable; interval: 80"
               near="0.05" far="500">
