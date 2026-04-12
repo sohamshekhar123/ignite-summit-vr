@@ -1,38 +1,47 @@
 [
   {
-    "id": "poi-1",
-    "position": "0 1.5 -5",
-    "title": "Main Entrance",
-    "description": "Welcome to the CAPS building. This is your starting point for the virtual tour.",
-    "audio": "audio-poi-1",
+    "id": "poi-1-1052",
+    "position": "-15.96 1.50 11.76",
+    "icon": "mapPin",
+    "title": "technology data science room",
+    "description": "",
     "color": "#e94560",
-    "viewOffset": "0 0 3"
+    "viewOffset": "0 0 2.5"
   },
   {
-    "id": "poi-2",
-    "position": "5 1.5 -5",
-    "title": "Innovation Lab",
-    "description": "Where students build real-world projects using cutting-edge tools and technology.",
-    "audio": "audio-poi-2",
-    "color": "#533483",
-    "viewOffset": "-2.5 0 2"
+    "id": "poi-2-0988",
+    "position": "-11.41 1.50 -21.27",
+    "icon": "mapPin",
+    "title": "technology software design classroom",
+    "description": "",
+    "color": "#e94560",
+    "viewOffset": "0 0 2.5"
   },
   {
-    "id": "poi-3",
-    "position": "-5 1.5 -5",
-    "title": "Collaboration Space",
-    "description": "Open area designed for team projects, brainstorming, and peer learning.",
-    "audio": "audio-poi-3",
-    "color": "#0f3460",
-    "viewOffset": "2.5 0 2"
+    "id": "poi-3-9146",
+    "position": "-15.83 1.50 -19.84",
+    "icon": "mapPin",
+    "title": "business classroom",
+    "description": "",
+    "color": "#e94560",
+    "viewOffset": "0 0 2.5"
   },
   {
-    "id": "poi-4",
-    "position": "0 1.5 -10",
-    "title": "Studio",
-    "description": "Creative and media production studio — video, audio, and digital art production.",
-    "audio": "audio-poi-4",
-    "color": "#16213e",
-    "viewOffset": "0 0 3"
+    "id": "poi-4-3677",
+    "position": "-1.82 1.50 -16.82",
+    "icon": "mapPin",
+    "title": "breakout rooms",
+    "description": "",
+    "color": "#e94560",
+    "viewOffset": "0 0 2.5"
+  },
+  {
+    "id": "poi-5-6087",
+    "position": "-1.17 1.50 13.92",
+    "icon": "mapPin",
+    "title": "medical room",
+    "description": "",
+    "color": "#e94560",
+    "viewOffset": "0 0 2.5"
   }
 ]
