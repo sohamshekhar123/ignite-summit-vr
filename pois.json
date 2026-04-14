@@ -1,46 +1,55 @@
 [
   {
-    "id": "poi-1-1052",
-    "position": "-15.96 1.50 11.76",
+    "id": "poi-1-9862",
+    "position": "3.78 1.50 -12.24",
     "icon": "mapPin",
-    "title": "technology data science room",
-    "description": "",
+    "title": "Breakout Spaces",
+    "description": "These collaborative rooms are where students step away from the full group to tackle strand-specific challenges, workshop ideas, meet with mentors, and collaborate in small teams. Think of them as the creative engine behind IGNITE's project-based learning model — flexible, and always in use.",
     "color": "#e94560",
     "viewOffset": "0 0 2.5"
   },
   {
-    "id": "poi-2-0988",
-    "position": "-11.41 1.50 -21.27",
+    "id": "poi-2-0344",
+    "position": "-1.03 1.50 -6.09",
     "icon": "mapPin",
-    "title": "technology software design classroom",
-    "description": "",
+    "title": "The Main Space",
+    "description": "Present. Pitch. Perform.\nDescription: This central space is the heart of the CAPS building — where students present project work, pitch solutions to industry partners, and demonstrate what they've built. an open collaborative layout, it's intentionally designed to mirror a real professional environment, not a traditional school.",
     "color": "#e94560",
     "viewOffset": "0 0 2.5"
   },
   {
-    "id": "poi-3-9146",
-    "position": "-15.83 1.50 -19.84",
+    "id": "poi-3-3128",
+    "position": "-10.12 1.50 10.93",
     "icon": "mapPin",
-    "title": "business classroom",
-    "description": "",
+    "title": "Data Science & Cybersecurity classroom",
+    "description": "In this track, students learn to make sense of data and defend the systems that hold it. From analyzing trends to understanding how networks are secured and attacked, students develop skills that are in some of the highest demand across every industry",
     "color": "#e94560",
     "viewOffset": "0 0 2.5"
   },
   {
-    "id": "poi-4-3677",
-    "position": "-1.82 1.50 -16.82",
+    "id": "poi-4-9747",
+    "position": "-10.45 1.50 -20.11",
     "icon": "mapPin",
-    "title": "breakout rooms",
-    "description": "",
+    "title": "Global Business",
+    "description": "The Global Business strand turns students into strategic thinkers. Working alongside regional business mentors and through partnerships with local business, students develop skills in communication, problem-solving, and professional leadership — the fundamentals behind every successful organization.",
     "color": "#e94560",
     "viewOffset": "0 0 2.5"
   },
   {
-    "id": "poi-5-6087",
-    "position": "-1.17 1.50 13.92",
+    "id": "poi-5-4014",
+    "position": "3.29 1.50 11.42",
     "icon": "mapPin",
-    "title": "medical room",
-    "description": "",
+    "title": "Health Sciences",
+    "description": "One of IGNITE's most in-demand strands, Health Sciences places students directly into clinical training. From phlebotomy to anatomy and patient care, students leave with hands-on skills and — in some cases — certifications before they ever step foot in college.",
+    "color": "#e94560",
+    "viewOffset": "0 0 2.5"
+  },
+  {
+    "id": "poi-6-3583",
+    "position": "-16.28 1.77 17.49",
+    "icon": "mapPin",
+    "title": "Digital Media",
+    "description": "From photography and graphic design to video production, the Digital Media strand is where creative vision meets professional craft. Students build real portfolios using industry-standard tools, producing work for actual clients and projects — not just class assignments.",
     "color": "#e94560",
     "viewOffset": "0 0 2.5"
   }
